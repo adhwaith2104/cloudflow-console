@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data: https:; connect-src 'self' https:">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CloudFlow: serverless image processing on AWS</title>
+<meta name="description" content="CloudFlow: serverless image processing on AWS. A personal cloud project with a browser demo, the deployed architecture, and results observed on real AWS services.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%234f7cff%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27monospace%27 font-size=%2714%27 font-weight=%27700%27 fill=%27%2306101d%27 text-anchor=%27middle%27%3ECF%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#runs">Skip to runs</a>
+<div class="shell">
+  <aside class="sidebar" id="sidebar" aria-label="Navigation">
+    <div class="brand"><span class="mark" aria-hidden="true">CF</span><span><b>CloudFlow</b><small>Personal cloud project</small></span></div>
+    <nav><ul class="nav" id="nav">
+      <li><button type="button" data-view="overview"><span class="ico" aria-hidden="true">◫</span>Overview<kbd>1</kbd></button></li>
+      <li><button type="button" data-view="runs"><span class="ico" aria-hidden="true">▶</span>Runs<kbd>2</kbd></button></li>
+      <li><button type="button" data-view="architecture"><span class="ico" aria-hidden="true">⇄</span>Architecture<kbd>3</kbd></button></li>
+      <li><button type="button" data-view="results"><span class="ico" aria-hidden="true">✓</span>Results<kbd>4</kbd></button></li>
+    </ul></nav>
+    <div class="sidefoot">
+      <div class="env"><span class="led sim" aria-hidden="true" id="env-led"></span><span><b id="env-title">Browser demo</b><small id="env-sub">No AWS connection</small></span></div>
+      <div class="env"><span class="led real" aria-hidden="true"></span><span><b>Backend</b><small>Deployed on AWS · us-east-2</small></span></div>
+    </div>
+  </aside>
+
+  <div class="work">
+    <header class="topbar">
+      <button type="button" class="iconbtn menubtn" id="menubtn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+      <div class="crumbs"><span class="muted">CloudFlow</span><span class="sep" aria-hidden="true">/</span><h1 id="pagetitle">Overview</h1></div>
+      <div class="topactions">
+        <span class="badge sim" id="topbadge">Browser demo</span>
+        <button type="button" class="btn" id="signout" hidden>Sign out</button>
+        <button type="button" class="btn primary" id="top-newjob">+ Process images</button>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="view" id="view-overview" aria-labelledby="h-overview">
+        <p class="note statement" id="public-statement"><b>What this is.</b> My personal cloud project, running on AWS. Everyone can use the browser demo on the Runs page (nothing is uploaded). Signing in with an approved account runs the same job on the real service, within daily quotas.</p>
+        <div class="pagehead">
+          <h2 id="h-overview">CloudFlow · serverless image processing on AWS</h2>
+          <p>I built CloudFlow to understand how AWS services work together in a real application. A signed-in user uploads images, chooses a size and format, and gets resized files back. The API accepts the job in milliseconds, a queue holds it, a Lambda function does the work in the background, and the page shows the result when it is ready.</p>
+        </div>
+        <div class="hero">
+          <button type="button" class="btn primary big" id="ov-process">Try it in your browser</button>
+          <a class="btn big" id="ov-casestudy" href="case-study.html">Read the case study</a>
+          <ul class="chips" aria-label="Two ways to use CloudFlow">
+            <li class="badge sim">Browser demo: your browser resizes the images, nothing is uploaded</li>
+            <li class="badge real">Live on AWS: for approved accounts, with daily quotas</li>
+          </ul>
+        </div>
+        <!-- The three headline numbers live here; edit them in this one place. -->
+        <dl class="metrics">
+          <div><dt>AWS resources deployed</dt><dd>120</dd><span>one <code>terraform apply</code> in us-east-2</span></div>
+          <div><dt>Automated tests</dt><dd>349</dd><span>Python tests on every push, plus 77 JavaScript tests and headless-browser checks</span></div>
+          <div><dt>Live checks on AWS</dt><dd>32</dd><span>sign-in, uploads, processing, downloads, isolation, quotas and failure drills, run against the deployed service</span></div>
+        </dl>
+        <div class="panel archpanel" id="ov-archpanel">
+          <div class="panelhead"><h3>Architecture</h3><span class="muted small">Deployed on AWS · 5 November 2026</span></div>
+          <div class="archpreview" id="ov-arch" aria-hidden="true"></div>
+          <div class="actions"><button type="button" class="btn" id="ov-openarch">Open the full architecture →</button></div>
+        </div>
+      </section>
+
+      <!-- ============ RUNS ============ -->
+      <section class="view" id="view-runs" aria-labelledby="h-runs">
+        <div class="panel livecta" id="live-cta" hidden>
+          <p class="small">Live processing runs on AWS for approved accounts with daily quotas; the browser demo below works for everyone.</p>
+          <button type="button" class="btn primary" id="cta-signin">Sign in</button>
+        </div>
+        <div class="runs-layout">
+          <div class="panel newjob" id="newjob">
+            <div class="panelhead"><h3 id="h-runs">Process images</h3><span class="muted small">Resized in your browser</span></div>
+            <p class="small muted">Browser demo: nothing is uploaded. Your browser does the resizing; the AWS steps shown around it are a simulation of what the deployed service does. Sign in with an approved account to run it on AWS.</p>
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop images or choose files" aria-describedby="dz-hint"><b>Drop images or choose files</b><small id="dz-hint">JPEG, PNG or WebP · up to 10 images · 5 MB each</small></div>
+            <label class="sr" for="img-files">Choose image files</label>
+            <input class="sr" id="img-files" type="file" multiple accept="image/jpeg,image/png,image/webp" tabindex="-1">
+            <ul class="filelist picked" id="img-list" aria-label="Selected files"></ul>
+            <p class="note bad" id="img-msg" role="alert"></p>
+            <div class="livectl">
+              <label for="img-preset">Dimensions <small>pixels, 16 to 4096</small></label>
+              <select id="img-preset"><option value="640x480">640 × 480</option><option value="1280x720" selected>1280 × 720</option><option value="1920x1080">1920 × 1080</option><option value="custom">Custom</option></select>
+              <div class="dims" id="img-custom" hidden>
+                <div><label for="img-w">Width</label><input id="img-w" type="number" min="16" max="4096" value="800"></div>
+                <div><label for="img-h">Height</label><input id="img-h" type="number" min="16" max="4096" value="600"></div>
+              </div>
+              <label for="img-format">Format</label>
+              <select id="img-format"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp" id="img-webp">WebP</option></select>
+              <p class="note" id="img-webpnote" hidden>This browser cannot encode WebP, so that option is disabled.</p>
+              <label for="img-fit">Fit</label>
+              <select id="img-fit"><option value="inside">Inside: keep the aspect ratio</option><option value="cover">Cover: fill the box and crop the centre</option></select>
+              <div class="check"><input id="img-upscale" type="checkbox"><label for="img-upscale">Allow enlarging small images</label></div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn primary" id="run" disabled>Process images</button>
+              <button type="button" class="btn" id="skip" disabled>Skip animation</button>
+            </div>
+            <p class="note">The reliability demo (retries and the dead-letter queue) is on the <a href="#architecture">Architecture</a> page.</p>
+          </div>
+
+          <div class="panel newjob" id="live-signin" hidden>
+            <div class="panelhead"><h3>Sign in</h3><span class="muted small">Live mode</span></div>
+            <p class="small muted">Live mode talks to the real CloudFlow API on AWS. You sign in on the Amazon Cognito hosted page (authorization code with PKCE); this page never sees your password, and the tokens live only in this browser tab.</p>
+            <p class="note">There is no self sign-up. The account owner creates each user in the user pool, so without an account created for you, stay in the browser demo.</p>
+            <div class="actions"><button type="button" class="btn primary" id="lv-signin">Sign in</button></div>
+          </div>
+
+          <div class="panel newjob" id="live-newjob" hidden>
+            <div class="panelhead"><h3>New job</h3><span class="muted small">Live · <code>live.js</code></span></div>
+            <p class="small muted">Pick 1 to 10 images. They are uploaded straight to a private bucket with a signed form, then one job is queued for the worker.</p>
+            <div class="livectl">
+              <label for="lv-files">Images <small>JPEG, PNG or WebP, up to 5 MB each</small></label>
+              <input id="lv-files" type="file" multiple accept="image/jpeg,image/png,image/webp">
+              <ul class="filelist" id="lv-filelist" aria-label="Selected files"></ul>
+              <p class="note bad" id="lv-filemsg" role="alert"></p>
+              <label for="lv-preset">Dimensions <small>pixels, 16 to 4096</small></label>
+              <select id="lv-preset"><option value="640x480">640 × 480</option><option value="1280x720" selected>1280 × 720</option><option value="1920x1080">1920 × 1080</option><option value="custom">Custom</option></select>
+              <div class="dims" id="lv-custom" hidden>
+                <div><label for="lv-w">Width</label><input id="lv-w" type="number" min="16" max="4096" value="800"></div>
+                <div><label for="lv-h">Height</label><input id="lv-h" type="number" min="16" max="4096" value="600"></div>
+              </div>
+              <label for="lv-format">Format</label>
+              <select id="lv-format"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option></select>
+              <label for="lv-fit">Fit</label>
+              <select id="lv-fit"><option value="inside">Inside: keep the aspect ratio</option><option value="cover">Cover: fill the box and crop the centre</option></select>
+              <div class="check"><input id="lv-upscale" type="checkbox"><label for="lv-upscale">Allow enlarging small images</label></div>
+            </div>
+            <div class="actions"><button type="button" class="btn primary" id="lv-go">Upload and process</button></div>
+          </div>
+
+          <div class="panel runs">
+            <div class="panelhead"><h3>Runs <span class="count" id="runs-count">0</span></h3><span class="seg-h" role="group" aria-label="Mode" id="modeswitch"><button type="button" data-mode="sim" aria-pressed="true">Browser demo</button><button type="button" data-mode="live" aria-pressed="false" id="mode-live" disabled title="config.json not found">Live</button></span></div>
+            <p class="livemsg" id="live-msg" role="alert" hidden><span id="live-msg-text"></span> <button type="button" class="btn" id="live-retry" hidden>Retry</button></p>
+            <div class="tablewrap" id="sim-runs">
+              <table id="runs-table" aria-label="Runs">
+                <thead><tr><th>#</th><th>Type</th><th>Files</th><th>Status</th><th>Attempts</th><th>HTTP</th><th>Submitted</th><th>Finished</th></tr></thead>
+                <tbody><tr class="empty"><td colspan="8">No runs yet. Choose images and press Process images.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="tablewrap" id="live-runs" hidden>
+              <table id="live-table" aria-label="Live jobs">
+                <thead><tr><th>Job ID</th><th>Status</th><th>Files</th><th>Attempts</th><th>Created</th><th>Updated</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel inspector" id="inspector" hidden>
+            <div class="panelhead">
+              <h3>Job detail <span class="muted small mono" id="insp-title"></span></h3>
+              <span class="badge sim" id="insp-badge">Simulated</span>
+            </div>
+            <div class="arch small" id="demo-flow" aria-hidden="true" inert></div>
+            <p class="svcline small" id="insp-svc"></p>
+            <div class="jobcard" id="jobcard">
+              <div><span class="k">Job ID</span><span class="v mono" id="jc-id">—</span></div>
+              <div><span class="k">Status</span><span class="v" id="jc-status"><span class="pill">not started</span></span></div>
+              <div><span class="k">Attempts</span><span class="v mono" id="jc-attempts">—</span></div>
+              <div><span class="k">HTTP</span><span class="v mono" id="jc-http">—</span></div>
+            </div>
+            <ol class="stages" id="stages" aria-label="Job stages"></ol>
+            <div id="img-section" hidden>
+              <p class="note realnote">Real: your browser resized these files. Simulated: the API, queue, worker, table and bucket around them. Nothing left this browser.</p>
+              <h4>Files <small id="img-filesub"></small></h4>
+              <progress id="img-progress" value="0" max="1" aria-label="Resizing progress" hidden></progress>
+              <p class="small" id="img-progtext" role="status"></p>
+              <div class="filegrid" id="img-grid"></div>
+              <div class="actions fileactions">
+                <button type="button" class="btn" id="img-dlall" disabled>Download all</button>
+                <button type="button" class="btn" id="img-clear" disabled>Clear</button>
+              </div>
+            </div>
+            <div class="insp-grid">
+              <div>
+                <h4>Transitions</h4>
+                <ol class="narration" id="narration" aria-label="Transitions"></ol>
+              </div>
+              <div>
+                <h4>Status response <small id="state-sub">GET /status/{jobId}</small></h4>
+                <pre class="json" id="status-json">—</pre>
+                <h4>Stored output <small id="output-sub">S3 object</small></h4>
+                <pre class="json" id="result-json">—</pre>
+                <details class="techlog"><summary>Raw event log</summary><pre class="json" id="log"></pre></details>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel inspector" id="live-inspector" hidden>
+            <div class="panelhead">
+              <h3>Job detail <span class="muted small mono" id="lv-title"></span></h3>
+              <span class="badge real" id="lv-badge"></span>
+            </div>
+            <div class="arch small" id="live-flow" aria-hidden="true" inert></div>
+            <p class="note realnote" id="lv-statement"></p>
+            <p class="svcline small" id="lv-svc"></p>
+            <div class="jobcard">
+              <div><span class="k">Job ID</span><span class="v mono" id="lv-id">—</span></div>
+              <div><span class="k">Status</span><span class="v" id="lv-status">—</span></div>
+              <div><span class="k">Attempts</span><span class="v mono" id="lv-attempts">—</span></div>
+              <div><span class="k">HTTP</span><span class="v mono" id="lv-http">—</span></div>
+            </div>
+            <h4>Files <small id="lv-filesub"></small></h4>
+            <div class="filegrid" id="lv-grid"></div>
+            <div class="insp-grid">
+              <div>
+                <h4>Job response <small>GET /jobs/{jobId}</small></h4>
+                <pre class="json idle" id="lv-json">—</pre>
+              </div>
+              <div>
+                <h4>Manifest <small>signed link, five minutes</small></h4>
+                <p class="small" id="lv-manifest">—</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ARCHITECTURE ============ -->
+      <section class="view" id="view-architecture" aria-labelledby="h-architecture">
+        <div class="pagehead">
+          <h2 id="h-architecture">Architecture</h2>
+          <p>This is the architecture I deployed. Every box and arrow is drawn from one data file that a test checks against my Terraform configuration, so the diagram cannot drift from what is running. Select a service to see its configuration and security controls.</p>
+        </div>
+        <div class="panel archpanel">
+          <div class="panelhead"><h3>Deployed architecture</h3><span class="muted small">Select a service to see its configuration, security controls and connections</span></div>
+          <div class="archbar">
+            <p class="plstatus" id="pl-status"></p>
+            <div class="zoomctl" role="group" aria-label="Diagram zoom">
+              <button type="button" class="btn" id="pl-zout" aria-label="Zoom out">−</button>
+              <button type="button" class="btn" id="pl-zin" aria-label="Zoom in">+</button>
+              <button type="button" class="btn" id="pl-zfit" aria-label="Fit the whole diagram">Fit</button>
+            </div>
+          </div>
+          <div class="archwrap">
+            <p class="badge sim simrun" id="pl-simbadge" hidden>Simulated AWS execution · the only real work is the resize in your browser</p>
+            <div id="arch-figure"></div>
+          </div>
+        </div>
+        <div class="panel svcinfo" id="arch-info" aria-live="polite"></div>
+        <div class="split pl-explain">
+          <div class="panel steps">
+            <div class="panelhead"><h3>Why asynchronous</h3></div>
+            <ul>
+              <li><b>29 seconds.</b> API Gateway cuts a request off at 29 seconds; resizing a batch can take longer, so the API only accepts the job and answers at once with an id.</li>
+              <li><b>Bursts.</b> The queue absorbs a spike and the worker drains it at its own pace, instead of the front door falling over.</li>
+              <li><b>Retries.</b> A message that fails is delivered again by SQS without the client doing anything; only repeated failures are parked.</li>
+            </ul>
+          </div>
+          <div class="panel steps">
+            <div class="panelhead"><h3>Request lifecycle</h3></div>
+            <ol>
+              <li><b>Sign in</b> The Cognito hosted page signs the user in with the authorization code flow and PKCE.</li>
+              <li><b>Upload</b> POST /uploads returns presigned forms; the browser sends the bytes straight to the private input bucket.</li>
+              <li><b>Submit</b> POST /jobs records the job and queues a small message.</li>
+              <li><b>Process</b> The worker claims the job, resizes with Pillow, and writes the results.</li>
+              <li><b>Check and download</b> GET /jobs/{jobId} returns the status and presigned links valid for five minutes.</li>
+              <li><b>Recover</b> Three failed receives move a message to the dead-letter queue and raise an alarm; a corrupt image fails alone and is not retried.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="panel" id="failure">
+          <div class="panelhead"><h3>What happens on failure</h3><span class="badge sim">Reliability demo · simulation</span></div>
+          <ol class="failseq">
+            <li><b>Corrupt message (poison).</b> The worker cannot find a job id, writes nothing, and reports the message; SQS redelivers it.</li>
+            <li><b>Rejected data.</b> A well-formed job with invalid data is marked failed once and is not retried.</li>
+            <li><b>Temporary failure (transient).</b> A write error marks the job failed and reports it; the retry completes it.</li>
+            <li><b>After three failed receives</b> SQS moves the message to the dead-letter queue, a CloudWatch alarm goes to ALARM, and an alert is published to SNS.</li>
+          </ol>
+          <p class="small muted">The three scenarios below are a simulation that replays these rules on the legacy API-key route. They light the same diagram, but nothing here calls AWS.</p>
+          <div class="seg seg-row" role="group" aria-label="Reliability scenarios" id="scenarios">
+            <button type="button" data-scenario="success"><b>Successful job</b><small>Submit, process, download.</small></button>
+            <button type="button" data-scenario="transient"><b>Temporary failure</b><small>Write fails once, retry completes.</small></button>
+            <button type="button" data-scenario="poison"><b>Corrupt message</b><small>Three attempts, then dead-letter.</small></button>
+          </div>
+          <div class="actions"><button type="button" class="btn" id="pl-skip" disabled>Skip animation</button><a class="btn" href="#runs">Open the run in Runs</a></div>
+          <p class="small" id="pl-caption" aria-live="polite">Pick a scenario to light the diagram above.</p>
+        </div>
+        <p class="note">Design decisions, IAM, failure handling and tests: <a href="engineering.html">engineering notes</a>.</p>
+      </section>
+
+      <!-- ============ RESULTS ============ -->
+      <section class="view" id="view-results" aria-labelledby="h-results">
+        <div class="pagehead">
+          <h2 id="h-results">Results and evidence</h2>
+          <p>Everything on this page was observed on real AWS services in us-east-2. The evidence files are sanitized logs: account ids, endpoints, keys, signatures and e-mail addresses were removed.</p>
+        </div>
+        <div class="panel">
+          <div class="panelhead"><h3>Live verification, 5 November 2026</h3><span class="muted small">Check → result</span></div>
+          <!-- To add a row (for example the dead-letter drill), copy one <div> inside this list. -->
+          <dl class="results" id="live-results">
+            <div><dt>Deployment</dt><dd>120 resources created by one terraform apply; nothing changed or destroyed</dd></div>
+            <div><dt>Image library on Lambda</dt><dd>Pillow 13.0.0 with WebP support imported on the real runtime</dd></div>
+            <div><dt>Sign-in</dt><dd>Cognito hosted page with PKCE; the ID token carries the nonce; tokens stay in session storage</dd></div>
+            <div><dt>Upload, process, download</dt><dd>three images resized and downloadable 4.2 seconds after the click</dd></div>
+            <div><dt>Ten images in one job</dt><dd>all ten done in 6.7 seconds; the worker used 5.7 seconds and 135 MB of its 1,024 MB</dd></div>
+            <div><dt>Three jobs at once</dt><dd>all completed on the first attempt; worker concurrency peaked at 2, the configured cap</dd></div>
+            <div><dt>Corrupt file</dt><dd>failed on its own with a clear reason; the other file completed; nothing was retried</dd></div>
+            <div><dt>Duplicate messages</dt><dd>two extra copies of a finished job's message were skipped; the record and outputs did not change</dd></div>
+            <div><dt>Access control</dt><dd>no token 401; tampered token 403; another account's job 404; another account's upload 400</dd></div>
+            <div><dt>Daily quotas</dt><dd>the 11th job and the 21st upload request of a day were refused with 429</dd></div>
+            <div><dt>Upload links</dt><dd>refused by S3 when used after their 60-second lifetime</dd></div>
+            <div><dt>Cost guard drill</dt><dd>a test alert paused uploads and jobs and set every API throttle to zero within about a second</dd></div>
+            <div><dt>Request-flood drill</dt><dd>the alarm fired after five and a half minutes of steady requests; the guard paused the service one second later</dd></div>
+            <div><dt>Dead-letter drill</dt><dd>a broken message was received three times, twelve minutes apart, then moved to the dead-letter queue; the alarm fired three minutes later</dd></div>
+            <div><dt>Operator switch</dt><dd>one command paused the whole service within half a minute and another restored it</dd></div>
+            <div><dt>Cost of the first day</dt><dd>about one cent of credit for the deployment, every test and both drills</dd></div>
+            <div><dt>Errors</dt><dd>zero Lambda errors and zero 5xx responses across the run; logs contained no tokens, signatures or e-mail addresses</dd></div>
+          </dl>
+        </div>
+        <div class="panel firstdeploy" id="first-deployment">
+          <div class="panelhead"><h3>First deployment, 4 November 2026</h3><span class="muted small">Times in UTC</span></div>
+          <p class="small muted">Before adding image processing I deployed the queue-and-worker core on its own, tested it, broke it on purpose, and destroyed it the same day: 51 resources up, 59 jobs completed, 51 resources down.</p>
+          <ol class="timeline" id="timeline" aria-label="First deployment timeline"></ol>
+          <h4 class="subhead">What I verified</h4>
+          <table class="findings" id="findings"><tbody></tbody></table>
+          <h3 class="subhead">Two problems I found and fixed</h3>
+          <div class="bugs">
+            <article class="bug">
+              <h4><span class="bugno">Bug 1</span>Every submit returned 500</h4>
+              <dl>
+                <dt>Symptom</dt><dd>Valid requests passed validation, then <code>500 Internal server error</code>. Nothing reached the queue.</dd>
+                <dt>Cause</dt><dd>The API's IAM role trust policy carried an <code>aws:SourceAccount</code> condition. API Gateway does not populate that key when it assumes an integration role, so the assume-role call was refused. Found in the execution log.</dd>
+                <dt>Fix</dt><dd>Removed the condition from that one role; the Lambda roles keep it. Redeployed within the hour.</dd>
+              </dl>
+              <a href="evidence.html#03-submit-500-diagnosis">Evidence 03 →</a>
+            </article>
+            <article class="bug">
+              <h4><span class="bugno">Bug 2</span>Download link answered 403</h4>
+              <dl>
+                <dt>Symptom</dt><dd>Status said <em>completed</em> with a signed link, but fetching it gave <code>403 Forbidden</code> after a redirect.</dd>
+                <dt>Cause</dt><dd>The link was signed for the legacy global S3 host. S3 redirected the us-east-2 bucket to its regional host; the signature covers the host, so it no longer matched.</dd>
+                <dt>Fix</dt><dd>Sign against the regional endpoint with SigV4; a regression test asserts the regional host. Verified: 200, zero redirects, byte-identical file, tampered signature refused.</dd>
+              </dl>
+              <a href="evidence.html#08-presigned-403-diagnosis">Evidence 08 →</a>
+            </article>
+          </div>
+        </div>
+        <div class="panel mech">
+          <div class="panelhead"><h3>Security and reliability mechanisms</h3></div>
+          <ul>
+            <li><b>Cognito + PKCE.</b> Sign-in on the hosted page with the authorization code flow; the browser never holds AWS credentials.</li>
+            <li><b>Presigned POST policy pins.</b> Uploads are pinned to one key, one content type and a 1 byte to 5 MB size range, and the upload form expires after 60 seconds.</li>
+            <li><b>Per-user prefixes.</b> Each user's inputs and results live under their own id; one user cannot list or read another's.</li>
+            <li><b>IAM per function, with a static test.</b> Every Lambda has its own role scoped to exact actions and resources, and a test fails on a wildcard or on a policy outside the reviewed set.</li>
+            <li><b>Atomic claim + lease.</b> A conditional write gives a job to one worker; a lease that expires lets another worker take over a dead one.</li>
+            <li><b>Per-file failures are never retried.</b> A corrupt image fails alone with a short reason; the other files still finish.</li>
+            <li><b>Alarms + dead-letter queue.</b> Three failed receives park the message and raise a CloudWatch alarm.</li>
+            <li><b>No secrets in the repository.</b> Keys come from the environment or SSM Parameter Store; the public build and the CI pipeline scan for secret-shaped text and refuse to publish it.</li>
+          </ul>
+        </div>
+        <nav class="links" aria-label="Project links"><a href="case-study.html">Case study</a><a href="engineering.html">Engineering notes</a><a href="evidence.html">Sanitized evidence</a></nav><p class="note navnote">Source code (Python, Terraform, tests, runbooks) is in a private repository and is available on request.</p>
+        <p class="foot muted small">Services: API Gateway, SQS, Lambda, DynamoDB, S3, Cognito, IAM, CloudWatch, SNS, X-Ray, Budgets. Architecture adapted from a CloudProjects.dev recipe; every departure is documented in the project plan.</p>
+      </section>
+
+    </main>
+  </div>
+</div>
+<script src="sim.js"></script>
+<script src="live.js"></script>
+<script src="imaging.js"></script>
+<script src="arch.js"></script>
+<script src="archview.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

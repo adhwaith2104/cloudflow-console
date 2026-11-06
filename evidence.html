@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data: https:; connect-src 'self' https:">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CloudFlow: AWS evidence</title>
+<meta name="description" content="CloudFlow: serverless image processing on AWS. Sanitized logs from the deployments: apply, live passes, diagnoses, drills, teardown.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%234f7cff%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body class="pg-ev">
+<main class="evwrap">
+  <a class="back" href="index.html#results">← Back to the console</a>
+  <div class="pagehead">
+    <span class="badge real">Sanitized evidence</span>
+    <h2 class="evh">Sanitized evidence from the real deployments</h2>
+    <p>Sanitized logs from the deployments. Account ids, endpoints, keys, signatures and e-mail addresses were removed before the files were saved; placeholders such as <code>&lt;ACCOUNT&gt;</code> and <code>&lt;masked&gt;</code> mark removed values.</p>
+  </div>
+  <ul class="evtoc"><li><a href="#01-terraform-apply">Terraform apply, 2026-11-04 (sanitized)</a></li><li><a href="#02-live-pass-1">Live test pass 1, 2026-11-04 18:42 UTC (sanitized)</a></li><li><a href="#03-submit-500-diagnosis">API Gateway execution log for the failing submit (sanitized)</a></li><li><a href="#04-live-pass-2">Live test pass 2, 2026-11-04 19:02 UTC (sanitized)</a></li><li><a href="#05-dlq-and-alarm">Dead-letter queue drill and alarm (sanitized)</a></li><li><a href="#06-tests-and-security">Tests and security checks (sanitized)</a></li><li><a href="#07-live-pass-3-presigned">Live test pass 3, 2026-11-04 19:14 UTC (sanitized): presigned URL fix verified</a></li><li><a href="#08-presigned-403-diagnosis">Presigned URL 403 (sanitized)</a></li><li><a href="#09-teardown">Teardown, 2026-11-04 19:19–19:25 UTC (sanitized)</a></li><li><a href="#10-live-deployment">10. Live deployment and verification of the image-processing service (2026-11-05)</a></li></ul>
+  <section class="panel evdoc" id="01-terraform-apply"><div class="doc"><h1>Terraform apply, 2026-11-04 (sanitized)</h1>
+<h2>Initial apply of the saved plan p1.tfplan</h2>
+<div class="codeblock"><pre>random_id.suffix: created
+aws_api_gateway_api_key.client: created
+aws_cloudwatch_log_group.status: created
+aws_cloudwatch_log_group.processor: created
+aws_sns_topic.alerts: created
+aws_iam_role.api: created
+aws_iam_role.status: created
+aws_iam_role.processor: created
+aws_sns_topic_subscription.email: created
+aws_api_gateway_rest_api.main: created
+aws_api_gateway_request_validator.body: created
+aws_api_gateway_model.submit_job: created
+aws_api_gateway_resource.status: created
+aws_api_gateway_resource.submit: created
+aws_s3_bucket.results: created
+aws_api_gateway_method.submit_post: created
+aws_api_gateway_resource.status_job: created
+aws_api_gateway_method_response.submit_500: created
+aws_s3_bucket_public_access_block.results: created
+aws_api_gateway_method_response.submit_202: created
+aws_api_gateway_method.status_get: created
+aws_api_gateway_method_response.submit_502: created
+aws_s3_bucket_policy.results: created
+aws_s3_bucket_server_side_encryption_configuration.results: created
+aws_s3_bucket_versioning.results: created
+aws_sqs_queue.dlq: created
+aws_cloudwatch_metric_alarm.dlq_messages: created
+aws_dynamodb_table.jobs: created
+aws_iam_role_policy.status: created
+aws_sqs_queue.main: created
+aws_sqs_queue_policy.dlq: created
+aws_api_gateway_integration.submit_sqs: created
+aws_iam_role_policy.api: created
+aws_api_gateway_integration_response.submit_202: created
+aws_iam_role_policy.processor: created
+aws_api_gateway_integration_response.submit_502: created
+aws_api_gateway_integration_response.submit_500: created
+aws_lambda_function.status: created
+aws_api_gateway_integration.status_lambda: created
+aws_lambda_permission.status_from_apigw: created
+aws_api_gateway_deployment.main: created
+aws_api_gateway_stage.v1: created
+aws_api_gateway_method_settings.all: created
+aws_api_gateway_usage_plan.main: created
+aws_api_gateway_usage_plan_key.client: created
+aws_s3_bucket_lifecycle_configuration.results: created
+aws_lambda_function.processor: created
+aws_cloudwatch_metric_alarm.processor_errors: created
+aws_sqs_queue_redrive_allow_policy.dlq: created
+aws_sqs_queue_policy.main: created
+aws_lambda_event_source_mapping.processor: created
+Apply complete! Resources: 51 added, 0 changed, 0 destroyed.</pre></div>
+<h2>Trust-policy fix (plan 1 to add, 3 to change, 1 to destroy; applied as 1 added, 2 changed, 1 destroyed)</h2>
+<div class="codeblock"><pre>  ~ resource &quot;aws_iam_role&quot; &quot;api&quot; {
+      ~ assume_role_policy    = jsonencode(
+          ~ {
+              ~ Statement = [
+                  ~ {
+                      - Condition = {
+                          - StringEquals = {
+                              - &quot;aws:SourceAccount&quot; = &quot;&lt;ACCOUNT&gt;&quot;</pre></div></div></section><section class="panel evdoc" id="02-live-pass-1"><div class="doc"><h1>Live test pass 1, 2026-11-04 18:42 UTC (sanitized)</h1>
+<p>Before the trust-policy fix. The 500 on POST /submit was the predicted role-assumption failure.</p>
+<div class="codeblock"><pre>### 0. plan file removed; state count
+p1.tfplan deleted: yes
+resources in state: 62
+api name: cdd-async-&lt;suffix&gt;-api
+api id length: 10
+api key value length: &lt;n&gt;
+table: cdd-async-&lt;suffix&gt;-jobs
+bucket: cdd-async-&lt;suffix&gt;-results
+processor fn: cdd-async-&lt;suffix&gt;-processor
+main queue url: https://sqs.us-east-2.amazonaws.com/&lt;ACCOUNT&gt;/cdd-async-&lt;suffix&gt;-main
+dlq url: https://sqs.us-east-2.amazonaws.com/&lt;ACCOUNT&gt;/cdd-async-&lt;suffix&gt;-dlq
+true
+### 3. end-to-end job through the real API
+submit failed: HTTP 500 {&#x27;message&#x27;: &#x27;Internal server error&#x27;}
+script exit: 1
+### 4. rejected request / missing key / bad id
+400 expected: {&quot;message&quot;: &quot;Invalid request body&quot;} [400]
+403 expected: {&quot;message&quot;:&quot;Forbidden&quot;} [403]
+400 expected: {&quot;message&quot;: &quot;jobId must be a UUID&quot;} [400]
+415 expected: {&quot;message&quot;: &quot;Unsupported Media Type&quot;} [415]
+### 5. throttle probe: 25 parallel GETs against burst 5 / rate 10
+     10 202
+     15 500
+        service_name, **create_client_kwargs
+    ...&lt;5 lines&gt;...
+botocore.exceptions.MissingDependencyException: Missing Dependency: Using the login credential provider requires an additional dependency. You will need to pip install &quot;botocore[crt]&quot; before proceeding.
+sent at 2026-11-04T18:42:47Z
+### 7. DynamoDB items and S3 objects
+### 8. processor log lines so far
+aws: [ERROR]: An error occurred (InvalidParameterException) when calling the FilterLogEvents operation: 1 validation error detected: Value at &#x27;logGroupName&#x27; failed to satisfy constraint: Member must satisfy regular expression pattern: [\.\-_/#A-Za-z0-9]+
+### 9. plan state after tests
+120.0</pre></div></div></section><section class="panel evdoc" id="03-submit-500-diagnosis"><div class="doc"><h1>API Gateway execution log for the failing submit (sanitized)</h1>
+<div class="codeblock"><pre>Request validation succeeded for content type application/json
+Execution failed due to configuration error: API Gateway does not have permission to assume the provided role arn:aws:iam::&lt;account&gt;:role/cdd-async-&lt;suffix&gt;-api
+Method completed with status: 500</pre></div>
+<p>Cause: aws:SourceAccount condition on the API role trust policy. API Gateway does not populate that key for integration credentials. Fixed by removing the condition from aws_iam_role.api only; Lambda roles keep it.</p></div></section><section class="panel evdoc" id="04-live-pass-2"><div class="doc"><h1>Live test pass 2, 2026-11-04 19:02 UTC (sanitized)</h1>
+<p>After the trust-policy fix. The presigned download 403 is the regional-endpoint defect fixed afterwards in app/status.py.</p>
+<div class="codeblock"><pre>run at 2026-11-04T19:02:46Z
+### 1. trust fix check: test-invoke POST /submit through API Gateway (log tail)
+{
+    &quot;status&quot;: 202,
+    &quot;body&quot;: &quot;{\&quot;jobId\&quot;:\&quot;e027c893-cbc6-4627-af62-59ffc364f740\&quot;,\&quot;status\&quot;:\&quot;queued\&quot;}&quot;
+}
+### 2. real end-to-end job via the public endpoint (scripts/submit_and_poll.py)
+submitted job f16b1d76-c452-4343-b9e8-8557b0ef14d4
+  HTTP 202 status=pending
+  HTTP 202 status=pending
+  HTTP 202 status=pending
+  HTTP 202 status=pending
+  HTTP 200 status=completed
+    sys.exit(main())
+urllib.error.HTTPError: HTTP Error 403: Forbidden
+script exit: 1
+### 3. SQS evidence: NumberOfMessagesSent / Received / Deleted on the main queue (last 30 min, 5-min bins)
+NumberOfMessagesSent: 1.0
+NumberOfMessagesReceived: 3.0
+NumberOfMessagesDeleted: 0.0
+### 4. DynamoDB items
+-----------------------------------------------------------------------------------------------
+|                                            Scan                                             |
++----------+-----------------------------------------------------+------------+---------------+
+| attempts |                      resultKey                      |  status    |     task      |
++----------+-----------------------------------------------------+------------+---------------+
+|  1       |  results/f16b1d76-c452-4343-b9e8-8557b0ef14d4.json  |  completed |  echo         |
+|  1       |  results/e027c893-cbc6-4627-af62-59ffc364f740.json  |  completed |  trust_check  |
++----------+-----------------------------------------------------+------------+---------------+
+### 5. S3 result objects
+----------------------------------------------------------------
+|                         ListObjectsV2                        |
++-------+------------------------------------------------------+
+| bytes |                         key                          |
++-------+------------------------------------------------------+
+|  185  |  results/e027c893-cbc6-4627-af62-59ffc364f740.json   |
+|  189  |  results/f16b1d76-c452-4343-b9e8-8557b0ef14d4.json   |
++-------+------------------------------------------------------+
+### 6. status endpoint: completed job detail (resultUrl masked) and unknown id
+{&quot;jobId&quot;: &quot;f16b1d76-c452-4343-b9e8-8557b0ef14d4&quot;, &quot;status&quot;: &quot;completed&quot;, &quot;task&quot;: &quot;echo&quot;, &quot;attempts&quot;: 1, &quot;submittedAt&quot;: &quot;&lt;epoch-ms&gt;&quot;, &quot;createdAt&quot;: &quot;2026-11-04T19:03:10.497993+00:00&quot;, &quot;updatedAt&quot;: &quot;2026-11-04T19:03:11.553832+00:00&quot;, &quot;resultKey&quot;: &quot;results/f16b1d76-c452-4343-b9e8-8557b0ef14d4.json&quot;, &quot;resultUrl&quot;: &quot;https://cdd-async-&lt;suffix&gt;-results.s3.amazonaws.com/results/f16b1d76-c452-4343-b9e8-8557b0ef14d4.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=&lt;masked&gt;&amp;X-Amz-Date=20261104T190324Z&amp;X-Amz-Expires=300&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Security-Token=&lt;masked&gt;&amp;X-Amz-Signature=&lt;masked&gt;&quot;}
+{&quot;jobId&quot;: &quot;00000000-0000-4000-8000-000000000000&quot;, &quot;status&quot;: &quot;pending&quot;, &quot;message&quot;: &quot;not yet picked up by a worker, or unknown id&quot;} [202]
+### 7. burst: 15 parallel POST /submit (burst 5 / rate 10 on the stage; no Lambda on this route)
+     15 202
+items by status after the burst:
+     16 completed
+      1 completed
+### 8. DLQ status (poison sent 18:43:41Z)
+aws: [ERROR]: An error occurred (InvalidAttributeName) when calling the GetQueueAttributes operation: Unknown Attribute ApproximateNumberOfMessagesVisible.
+aws: [ERROR]: An error occurred (InvalidAttributeName) when calling the GetQueueAttributes operation: Unknown Attribute ApproximateNumberOfMessagesVisible.
+### 9. alarms
+------------------------------------------------------------------------------------------------------------------------------------------------------
+|                                                                            DescribeAlarms                                                           
++-------------------------------------+---------------------------------------------------------------------------------------------------------------
+|                name                 |                                                       reason                                                  
++-------------------------------------+---------------------------------------------------------------------------------------------------------------
+|  cdd-async-&lt;suffix&gt;-dlq-messages    |  Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreach
+|  cdd-async-&lt;suffix&gt;-processor-errors|  Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreach
++-------------------------------------+---------------------------------------------------------------------------------------------------------------
+### 10. processor logs (last 30 min)
+2026-11-04T18:44:01 poison message 34ff76f7-212a-48c1-9672-ec1e83ab0a04: JSONDecodeError(&#x27;Expecting value: line 1 column 1 (char 0)&#x27;)
+2026-11-04T18:44:01 REPORT RequestId: 51a14b95-a294-596b-ab75-28f0dd8cefda	Duration: 3.19 ms	Billed Duration: 550 ms	Memory Size: 256 MB	Max Memory Used: 94 MB	Init Duration: 545.98 ms	
+2026-11-04T18:50:01 poison message 34ff76f7-212a-48c1-9672-ec1e83ab0a04: JSONDecodeError(&#x27;Expecting value: line 1 column 1 (char 0)&#x27;)
+2026-11-04T18:50:01 REPORT RequestId: 6967baad-7ee6-52e0-860d-d9c8fe669596	Duration: 1.92 ms	Billed Duration: 540 ms	Memory Size: 256 MB	Max Memory Used: 94 MB	Init Duration: 537.24 ms	
+2026-11-04T18:56:01 poison message 34ff76f7-212a-48c1-9672-ec1e83ab0a04: JSONDecodeError(&#x27;Expecting value: line 1 column 1 (char 0)&#x27;)
+2026-11-04T18:56:01 REPORT RequestId: ba46080b-27c5-5a16-ae7b-6b6ea61e88c6	Duration: 2.06 ms	Billed Duration: 580 ms	Memory Size: 256 MB	Max Memory Used: 94 MB	Init Duration: 577.72 ms	
+2026-11-04T19:03:11 REPORT RequestId: 137f03bd-89c1-5d85-a443-60d80a520c28	Duration: 2435.34 ms	Billed Duration: 3175 ms	Memory Size: 256 MB	Max Memory Used: 95 MB	Init Duration: 739.28 ms	
+2026-11-04T19:03:30 REPORT RequestId: 885628e8-4945-57be-8840-4b8dcaf70613	Duration: 5289.56 ms	Billed Duration: 5290 ms	Memory Size: 256 MB	Max Memory Used: 95 MB	
+2026-11-04T19:03:36 REPORT RequestId: e1a903f5-f456-506a-add5-609077eda37e	Duration: 2439.51 ms	Billed Duration: 3067 ms	Memory Size: 256 MB	Max Memory Used: 95 MB	Init Duration: 626.58 ms	
+2026-11-04T19:03:37 REPORT RequestId: e62e6ed4-d7dd-52ad-9d5d-0db1546d1cc0	Duration: 4279.10 ms	Billed Duration: 4280 ms	Memory Size: 256 MB	Max Memory Used: 95 MB	
+2026-11-04T19:03:39 REPORT RequestId: 0b63ffd8-38dd-5724-afa5-9cbdbb694af7	Duration: 3444.90 ms	Billed Duration: 4061 ms	Memory Size: 256 MB	Max Memory Used: 95 MB	Init Duration: 615.30 ms	
+2026-11-04T19:03:46 REPORT RequestId: 6f384e75-6d7c-5c8a-85d6-2d10eec9ace0	Duration: 1075.64 ms	Billed Duration: 1076 ms	Memory Size: 256 MB	Max Memory Used: 95 MB	
+### 11. X-Ray trace summaries (last 30 min)
+traces: 0
+traces: 2
+traces: 31
+----------------------------
+|     GetTraceSummaries    |
++-------+--------+---------+
+|  err  | http   |   ms    |
++-------+--------+---------+
+|  False|  200   |  0.655  |
+|  False|  200   |  0.718  |
+|  False|  500   |  0.033  |
++-------+--------+---------+
+### 12. credits
+120.0
+done at 19:03:57Z (API_KEY not printed)</pre></div></div></section><section class="panel evdoc" id="05-dlq-and-alarm"><div class="doc"><h1>Dead-letter queue drill and alarm (sanitized)</h1>
+<p>Poison message sent to the main queue at 18:43:41 UTC with body <code>this is not valid json</code>.</p>
+<p>Processor log, one line per receive (visibility timeout 360 s):</p>
+<div class="codeblock"><pre>2026-11-04T18:44:01 poison message &lt;id&gt;: JSONDecodeError(&#x27;Expecting value: line 1 column 1 (char 0)&#x27;)
+2026-11-04T18:50:01 poison message &lt;id&gt;: JSONDecodeError(&#x27;Expecting value: line 1 column 1 (char 0)&#x27;)
+2026-11-04T18:56:01 poison message &lt;id&gt;: JSONDecodeError(&#x27;Expecting value: line 1 column 1 (char 0)&#x27;)</pre></div>
+<p>DLQ at 19:05:04 UTC:</p>
+<div class="codeblock"><pre>{&quot;ApproximateNumberOfMessages&quot;: &quot;1&quot;, &quot;ApproximateNumberOfMessagesNotVisible&quot;: &quot;0&quot;}
+peek: {&quot;body&quot;: &quot;this is not valid json&quot;, &quot;receives&quot;: &quot;4&quot;}</pre></div>
+<p>Alarms at 19:05 UTC:</p>
+<div class="codeblock"><pre>cdd-async-&lt;suffix&gt;-dlq-messages      ALARM   state updated 2026-11-04T19:04:10Z
+cdd-async-&lt;suffix&gt;-processor-errors  OK      (per-record failures are reported, not raised)</pre></div>
+<p>Timeline matches the design: three receives six minutes apart, move to the DLQ on the fourth, alarm within a minute of the metric.</p></div></section><section class="panel evdoc" id="06-tests-and-security"><div class="doc"><h1>Tests and security checks (sanitized)</h1>
+<ul><li>Offline tests before deploy: <code>40 passed</code> (moto; no AWS access).</li><li>Terraform: <code>fmt -check</code> clean, <code>validate</code> success, plan <code>51 to add, 0 to change, 0 to destroy</code>, apply <code>51 added</code>.</li><li>Opus reviews: code review (1 high, 3 medium, 11 low, all fixed) and deployment-readiness review (1 high, 4 medium, 13 low, all fixed); both "safe to deploy".</li><li>IAM policy simulation with aws:RequestedRegion=us-east-2: every create/delete action allowed by IAM and the Organization; the same actions explicitly denied for us-west-2 (managed region floor).</li><li>Live checks passed: 403 without API key, 400 schema violation, 400 non-UUID id, 415 wrong content type, 202 on submit, 202 pending for unknown ids, 200 completed with presigned URL, presigned HTTPS GET 200 with the S3 object byte-identical and a tampered signature refused (403), DLQ after 3 failed receives, DLQ alarm in ALARM, both Lambda functions Active after the code update.</li></ul></div></section><section class="panel evdoc" id="07-live-pass-3-presigned"><div class="doc"><h1>Live test pass 3, 2026-11-04 19:14 UTC (sanitized): presigned URL fix verified</h1>
+<p>After updating app/status.py to presign against the regional S3 endpoint (plan 0 to add, 2 to change, 0 to destroy; both Lambda functions share one archive).</p>
+<div class="codeblock"><pre>run at 2026-11-04T19:14:50Z
+
+### 1. lambda health
+{
+&quot;fn&quot;:&quot;cdd-async-&lt;suffix&gt;-status&quot;,
+&quot;state&quot;:&quot;Active&quot;,
+&quot;update&quot;:&quot;Successful&quot;,
+&quot;runtime&quot;:&quot;python3.12&quot;,
+&quot;modified&quot;:&quot;2026-11-04T19:13:56.000+0000&quot;
+}
+{
+&quot;fn&quot;:&quot;cdd-async-&lt;suffix&gt;-processor&quot;,
+&quot;state&quot;:&quot;Active&quot;,
+&quot;update&quot;:&quot;Successful&quot;,
+&quot;runtime&quot;:&quot;python3.12&quot;,
+&quot;modified&quot;:&quot;2026-11-04T19:14:02.000+0000&quot;
+}
+
+### 2. submit a new job
+{&quot;jobId&quot;:&quot;2245b634-ce63-4474-b6aa-f77599522e4b&quot;,&quot;status&quot;:&quot;queued&quot;}
+
+### 3. poll until completed
+  t+3s status=pending
+  t+6s status=pending
+  t+9s status=pending
+  t+12s status=pending
+  t+15s status=pending
+  t+18s status=pending
+  t+21s status=completed
+{&quot;jobId&quot;: &quot;2245b634-ce63-4474-b6aa-f77599522e4b&quot;, &quot;status&quot;: &quot;completed&quot;, &quot;task&quot;: &quot;presign_check&quot;, &quot;attempts&quot;: 1, &quot;submittedAt&quot;: &quot;&lt;epoch-ms&gt;&quot;, &quot;createdAt&quot;: &quot;2026-11-04T19:15:13.578681+00:00&quot;, &quot;updatedAt&quot;: &quot;2026-11-04T19:15:14.739107+00:00&quot;, &quot;resultKey&quot;: &quot;results/2245b634-ce63-4474-b6aa-f77599522e4b.json&quot;, &quot;resultUrl&quot;: &quot;https://cdd-async-&lt;suffix&gt;-results.s3.us-east-2.amazonaws.com/results/2245b634-ce63-4474-b6aa-f77599522e4b.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=&lt;masked&gt;&amp;X-Amz-Date=20261104T191516Z&amp;X-Amz-Expires=300&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Security-Token=&lt;masked&gt;&amp;X-Amz-Signature=&lt;masked&gt;&quot;}
+
+### 4. presigned URL signing parameters
+host: cdd-async-&lt;suffix&gt;-results.s3.us-east-2.amazonaws.com
+algorithm: AWS4-HMAC-SHA256
+credential scope: 20261104/us-east-2/s3/aws4_request
+signed at: 2026-11-04T19:15:16+00:00  expires in: 300 s  -&gt; 2026-11-04T19:20:16+00:00
+signed headers: host  session token present: True
+
+### 5. HTTPS GET of the presigned URL (no API key, no AWS credentials)
+http 200  bytes 206  redirects 0
+downloaded:
+{&quot;jobId&quot;: &quot;2245b634-ce63-4474-b6aa-f77599522e4b&quot;, &quot;task&quot;: &quot;presign_check&quot;, &quot;result&quot;: {&quot;echo&quot;: {&quot;hello&quot;: &quot;world&quot;, &quot;n&quot;: 3}, &quot;characters&quot;: 26}, &quot;processedAt&quot;: &quot;2026-11-04T19:15:14.602192+00:00&quot;, &quot;attempts&quot;: 1}
+
+### 6. compare with the S3 object read via the AWS API
+{
+&quot;contentType&quot;:&quot;application/json&quot;,
+&quot;bytes&quot;:206,
+&quot;sse&quot;:&quot;AES256&quot;
+}
+download == S3 object: True
+sha256 equal: True
+
+### 7. tampered URL is refused (signature check is real)
+tampered signature -&gt; http 403
+
+### 8. scripts/submit_and_poll.py end to end
+submitted job 0edecc1d-1f25-4a54-95cb-665b48ea4aff
+  HTTP 202 status=pending
+  HTTP 202 status=pending
+  HTTP 202 status=pending
+  HTTP 202 status=pending
+  HTTP 200 status=completed
+attempts=1 result={&quot;echo&quot;: {&quot;hello&quot;: &quot;world&quot;}, &quot;characters&quot;: 18}
+script exit: 0
+
+### 9. table and credits
+items in table: 59
+     58 completed
+      1 completed
+credits: 120.0
+done at 19:15:53Z (API_KEY not printed)</pre></div></div></section><section class="panel evdoc" id="08-presigned-403-diagnosis"><div class="doc"><h1>Presigned URL 403 (sanitized)</h1>
+<p>Symptom in pass 2: <code>GET /status/{jobId}</code> returned a <code>resultUrl</code>, but <code>urllib</code> following it got <code>HTTP Error 403: Forbidden</code> after a redirect.</p>
+<p>Cause: the status function presigned with boto3's default S3 client, which produced the legacy global host <code>bucket.s3.amazonaws.com</code>. For a bucket in us-east-2, S3 answers that host with a redirect to <code>bucket.s3.us-east-2.amazonaws.com</code>. The signature covers the <code>host</code> header, so the redirected request no longer matches and S3 returns 403.</p>
+<p>Fix in <code>app/status.py</code>: build the S3 client with <code>region_name</code>, <code>endpoint_url = https://s3.&lt;region&gt;.amazonaws.com</code>, and <code>Config(signature_version="s3v4", s3={"addressing_style": "virtual"})</code>. Regression test asserts the regional host in the URL.</p>
+<p>Verified live in pass 3: host <code>...s3.us-east-2.amazonaws.com</code>, credential scope <code>us-east-2/s3/aws4_request</code>, <code>X-Amz-Expires=300</code> (expiry = X-Amz-Date + 300 s), HTTPS GET → 200 with 0 redirects, downloaded JSON byte-identical to the object read through the S3 API (sha256 equal), tampered signature → 403.</p></div></section><section class="panel evdoc" id="09-teardown"><div class="doc"><h1>Teardown, 2026-11-04 19:19–19:25 UTC (sanitized)</h1>
+<p>Destroy plan (saved, guarded): <code>Plan: 0 to add, 0 to change, 51 to destroy.</code> All 51 addresses under the P1 prefix, no P0 name, the only bucket in the plan was the P1 results bucket (59 object versions, 0 delete markers; removed by <code>force_destroy</code>), 8 evidence files present before and after.</p>
+<div class="codeblock"><pre>Apply complete! Resources: 0 added, 0 changed, 51 destroyed.
+managed resources left in state: 0</pre></div>
+<p>Independent read-only leftover checks at 19:24 UTC, every one empty:</p>
+<div class="codeblock"><pre>tagged Project=01-async-api-platform   none      SQS queues cdd-async*        none
+Lambda functions cdd-async*            none      API Gateway REST APIs        none
+DynamoDB tables cdd-async*             none      S3 buckets cdd-async*        none
+SNS topics cdd-async*                  none      CloudWatch alarms            none
+IAM roles cdd-async*                   none      log groups /aws/lambda/...   none
+API keys cdd-async*                    none      usage plans cdd-async*       none
+DynamoDB backups                       none      any Project-tagged resource  none
+all buckets / tables / custom roles / customer policies in the account: none</pre></div>
+<p>Unaffected: the 3 AWS-managed roles, the default VPC, Free plan FREE/ACTIVE. Credits 120.00 before and after teardown.</p>
+<p>Residue, free and self-clearing: one SNS subscription in <code>PendingConfirmation</code> state remains listed (AWS removes unconfirmed subscriptions after three days; topic already gone). Service-linked roles went from 6 to 7 during the session, most likely API Gateway's own service-linked role created on first use; AWS-owned, no cost.</p>
+<p>Session closed with <code>aws logout --profile cdd</code>.</p></div></section><section class="panel evdoc" id="10-live-deployment"><div class="doc"><h1>10. Live deployment and verification of the image-processing service (2026-11-05)</h1>
+<p>Sanitized record. Account ids, the API address, the user pool and client ids, bucket suffixes, job and user ids, tokens and e-mail addresses are not recorded here. Times are UTC. Region us-east-2, AWS Free plan.</p>
+<h2>1. Preflight (read-only)</h2>
+<div class="tablewrap"><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody><tr><td>Account plan state (Free Tier API)</td><td>FREE, ACTIVE, plan ends 2027-05-04, 120 USD of credits remaining</td></tr><tr><td>Resources already in the account</td><td>none (0 functions, layers, buckets, tables, REST APIs, user pools, queues, topics, alarms, log groups, budgets, project roles, tagged resources)</td></tr><tr><td>Terraform state</td><td>empty</td></tr><tr><td><code>terraform plan</code></td><td><code>Plan: 120 to add, 0 to change, 0 to destroy.</code> Every action a create</td></tr></tbody></table></div>
+<h2>2. Apply</h2>
+<div class="codeblock"><pre>Apply complete! Resources: 120 added, 0 changed, 0 destroyed.</pre></div>
+<p>No resource was refused: AWS Budgets, the Cognito hosted domain, the SNS topic policy for the guard and the nine per-method throttle settings (including the nested <code>jobs/{jobId}</code> paths) were all accepted on the first apply.</p>
+<h2>3. First checks after the apply</h2>
+<div class="tablewrap"><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody><tr><td>Pillow on the real Lambda runtime (<code>{"healthcheck": true}</code>)</td><td><code>{"pillow": "13.0.0", "webp": true}</code>, status 200</td></tr><tr><td>Functions</td><td>processor 1024 MB / 120 s, api 256 MB / 10 s, status 128 MB / 10 s, guard 128 MB / 10 s, all python3.12</td></tr><tr><td>Alarms</td><td>seven present, all <code>OK</code> (one briefly <code>INSUFFICIENT_DATA</code> before its first datapoint)</td></tr><tr><td>Throttles (<code>kill_switch.py status</code>)</td><td>default 2/4 and all nine per-method overrides listed with the planned values</td></tr><tr><td>Preflight response</td><td>200 with <code>Access-Control-Allow-Origin</code> set to the console origin, <code>Access-Control-Max-Age: 600</code></td></tr><tr><td>Legacy route without an API key</td><td>403</td></tr></tbody></table></div>
+<h2>4. Cost-guard drills (hard gates before the public site was connected)</h2>
+<p><strong>Guard drill (19:23:19).</strong> One test message published to the budget-guard topic with operator credentials. One second later (19:23:20) the control item read <code>enabled = false</code>, reason <code>budget threshold</code>, and the stage default plus all nine method overrides read rate 0, burst 0, with no duplicate keys. <code>guard-errors</code> stayed <code>OK</code>. While paused, a preflight request answered 429 and an unauthenticated <code>GET /jobs</code> answered 401. <code>kill_switch.py enable --yes</code> restored the switch, the queue mapping and all ten throttle settings; the first 200 came about 20 seconds later (API Gateway applies stage settings with a short delay).</p>
+<p><strong>Request-flood drill (19:24:57 to 19:35:57).</strong> A script sent 1,617 CORS preflights at about 2.5 a second, spread evenly over the three preflight routes. The <code>api-requests</code> alarm (600 requests in 5 minutes) went to <code>ALARM</code> at 19:30:22. The guard wrote the control item at 19:30:23, reason <code>request alarm</code>, and set all ten throttles to zero. Of the 1,617 requests, 864 answered 200 before the pause and 753 answered 429 after it. <code>guard-errors</code> stayed <code>OK</code>. The alarm returned to <code>OK</code> at about 19:37:30, after the flood ended, and only then was the service re-enabled.</p>
+<p>Observed along the way: the API Gateway <code>Count</code> metric includes throttled (429) requests, which is why the alarm stays in <code>ALARM</code> while a flood continues. Whether 401 and 429 responses are billed is to be read from the next day's bill.</p>
+<h2>5. Live verification through the public site</h2>
+<p>Two temporary verification accounts were created by the operator for this run (no e-mail sent; random passwords never recorded) and removed afterwards. The checks drove the real public page in headless Chrome for the signed-in flow, then the same API with the session's token.</p>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>Check</th><th>Result</th></tr></thead><tbody><tr><td>1</td><td>Sign-in</td><td>Cognito hosted page, authorization code with PKCE; back on the console with a session; the code is removed from the address bar; the ID token carries the nonce; tokens only in session storage</td></tr><tr><td>2</td><td>Upload</td><td>Three files (JPEG with EXIF rotation, PNG with alpha, WebP) sent by presigned POST straight to the input bucket</td></tr><tr><td>3</td><td>Submit</td><td><code>POST /jobs</code> answered 202 with a job id</td></tr><tr><td>4</td><td>Queue delivery</td><td>One message, one worker invocation per job</td></tr><tr><td>5</td><td>Resize on Lambda</td><td>Outputs 427×640, 300×200 and 400×300 JPEG (the rotated source came out portrait, as intended)</td></tr><tr><td>6</td><td>Job tracking</td><td>queued → processing → completed; counts 3 completed, 0 failed; attempts 1; manifest link present</td></tr><tr><td>7</td><td>Downloads</td><td>Three presigned links, each returning a valid JPEG</td></tr><tr><td>8</td><td>Ten images in one job</td><td>Ten 1920×1080 WebP outputs and a manifest; 6.7 s from submission to completed</td></tr><tr><td>9</td><td>Three jobs submitted together</td><td>All completed on the first attempt; worker <code>ConcurrentExecutions</code> peaked at 2, the configured cap</td></tr><tr><td>10</td><td>Duplicate delivery</td><td>Two extra copies of a completed job's message: item unchanged (same <code>updatedAt</code>, attempts 1), outputs unchanged, worker logged "already terminal; duplicate skipped" twice</td></tr><tr><td>11</td><td>Unauthorized access</td><td>no token 401; tampered token 403; unknown job 404; another account's job 404; another account's upload key 400; a job list for the second account showed none of the first account's jobs</td></tr><tr><td>12</td><td>Request validation</td><td>A body without the required <code>task</code> field answered 400 "Invalid request body" at API Gateway, before Lambda</td></tr><tr><td>13</td><td>Corrupt file</td><td>Job completed with 1 completed and 1 failed file ("unsupported or corrupt image"); attempts 1; no retry</td></tr><tr><td>14</td><td>Job quota</td><td>The 11th job of the day from one account answered 429 "daily job limit reached"</td></tr><tr><td>15</td><td>Upload quota</td><td>The 21st upload request of the day from one account answered 429 "daily upload limit reached"</td></tr><tr><td>16</td><td>Upload link lifetime</td><td>A presigned upload used after 70 seconds was refused by S3 with 403</td></tr><tr><td>17</td><td>Front end</td><td>Previews and outputs loaded from presigned links; the signed-in labels say "Real: processed on AWS"; no application errors in the console (the only console message was a missing favicon on Cognito's own sign-in page)</td></tr></tbody></table></div>
+<p>Timings: 4.2 s from pressing "Upload and process" to "completed" on the page for the three-image job.</p>
+<h2>6. Measurements from CloudWatch (45-minute window covering the drills and the run)</h2>
+<div class="tablewrap"><table><thead><tr><th>Function</th><th>Invocations</th><th>Errors</th><th>Duration</th><th>Max memory</th><th>Cold starts</th></tr></thead><tbody><tr><td>processor (1024 MB)</td><td>14</td><td>0</td><td>median 149 ms, maximum 5,709 ms (the ten-image job)</td><td>135 MB</td><td>2 (init up to 557 ms)</td></tr><tr><td>api (256 MB)</td><td>83</td><td>0</td><td>median 35 ms, maximum 340 ms</td><td>100 MB</td><td>1 (init 602 ms)</td></tr><tr><td>guard (128 MB)</td><td>2</td><td>0</td><td>682 and 856 ms</td><td>97 MB</td><td>2</td></tr></tbody></table></div>
+<p>API Gateway: 1,738 requests counted, 786 4xx (753 of them the throttled flood), 0 5xx. Table after the run: 10 job items, all <code>completed</code>; 5 quota counters; 1 control item. Application log lines carry ids, decisions and error codes; a pattern search over every line found no token, signature, access key or e-mail address.</p>
+<h2>7. Dead-letter drill</h2>
+<p>One malformed message (<code>this is not valid json</code>) was sent to the main queue with operator credentials at 19:41:57 on 2026-11-05.</p>
+<div class="tablewrap"><table><thead><tr><th>Event</th><th>Time (UTC)</th></tr></thead><tbody><tr><td>First receive; the worker logged a poison message and reported it for retry</td><td>19:41:56</td></tr><tr><td>Second receive, one visibility timeout (720 s) later</td><td>19:53:56</td></tr><tr><td>Third receive</td><td>20:05:57</td></tr><tr><td>Fourth receive attempt: SQS moved the message to the dead-letter queue instead of delivering it</td><td>about 20:17:57</td></tr><tr><td><code>dlq-messages</code> alarm changed from <code>OK</code> to <code>ALARM</code></td><td>20:20:44</td></tr></tbody></table></div>
+<p>The next day the message was still in the dead-letter queue with its body intact and a receive count of 4 (three by the worker, one by the operator reading it). It was read and deleted with operator credentials at 17:25 on 2026-11-06, and the alarm returned to <code>OK</code>. No job item was written for it, and <code>processor-errors</code> stayed <code>OK</code> throughout, because the worker reports a bad message and does not crash on it.</p>
+<p>One thing the overnight history showed: the alarm briefly changed to <code>OK</code> and back to <code>ALARM</code> about seven hours after the message arrived (03:19 to 03:21 UTC). The queue had seen no activity for more than six hours, and SQS stops publishing metrics for idle queues, which the alarm treats as "not breaching" until the next datapoint. The message was never lost; a real operator would see the first <code>ALARM</code> notification.</p>
+<p>The alarm e-mail itself was not observed: the SNS e-mail subscription had not been confirmed.</p>
+<h2>8. What this run did not cover</h2>
+<ul><li>The alarm e-mail: the SNS e-mail subscription must be confirmed by the account owner from the confirmation message; until then alarms change state but no e-mail arrives.</li><li>The cost of the day: read from the Billing console the next day.</li><li>The legacy API-key routes with a real key (the key was not read during this run).</li></ul>
+<h2>9. Kill-switch drill and the day after (2026-11-06)</h2>
+<p><strong>Operator kill switch (17:25:39).</strong> <code>kill_switch.py disable --yes</code> wrote the control item (<code>enabled = false</code>, reason <code>operator kill switch</code>), disabled the queue-to-worker mapping and set the default and all nine method throttles to zero; exit code 0. Preflight requests answered 200 for about 25 seconds while API Gateway applied the change, then 429. <code>kill_switch.py enable --yes</code> (all three request alarms were <code>OK</code>, so it did not refuse) restored the switch, the mapping and every throttle; the first 200 came about 17 seconds later, and <code>status</code> showed the mapping <code>Enabled</code> and the planned values.</p>
+<p><strong>Cleanup.</strong> The two temporary verification accounts were deleted and their passwords removed from the operator's machine; the user pool holds no users until the owner creates their own.</p>
+<p><strong>After about 22 hours deployed.</strong> All seven alarms <code>OK</code>; both queues empty; the only requests were the tests and drills recorded here (no outside traffic). The plan-state API reported the Free plan active until 2027-05-04 and a credit balance of 139.99 USD, against 120.00 USD before the apply: AWS added a 20 USD activity credit during the day, and the difference of about one cent is the cost of everything in this record.</p></div></section>
+</main>
+</body>
+</html>

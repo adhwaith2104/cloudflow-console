@@ -1,0 +1,9 @@
+{
+  "apiBaseUrl": "https://qya1j0tzod.execute-api.us-east-2.amazonaws.com/v1",
+  "region": "us-east-2",
+  "userPoolId": "us-east-2_U6kGOv8ib",
+  "clientId": "2ec5l5qguiki6srvcnlsinsbd1",
+  "cognitoDomain": "cdd-async-2qxwzmcc.auth.us-east-2.amazoncognito.com",
+  "inputBucketHost": "cdd-async-684aa78d-input.s3.us-east-2.amazonaws.com",
+  "authHeaderScheme": "raw"
+}
