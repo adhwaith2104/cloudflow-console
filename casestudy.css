@@ -1,0 +1,126 @@
+/* Case study: <section id="story" class="pg-case"> at the top of index.html in the --case-study build (loaded after styles.css). The journey: a black stage, one white road, one moving point of light.
+   Geometry that JavaScript needs (road centre column, amplitude) is mirrored in journey.js: desktop >= 1100px, tablet 700-1099px, mobile < 700px. */
+html { scroll-padding-top: 72px; }
+.pg-case { --text-1: #d4d4d4; --pad: clamp(16px, 3vw, 40px); --bar: 56px; overflow-wrap: break-word; }
+.pg-case code { overflow-wrap: anywhere; }
+
+/* ---- slim top bar: "Try the Application" left, mini index right (desktop). Sticky inside #story only, so it ends where the console begins. ---- */
+.case-bar { position: sticky; top: 0; z-index: 30; height: var(--bar); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 var(--pad); background: var(--bg); border-bottom: 1px solid var(--line); }
+.jindex { display: none; }
+.jindex ol { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.jindex a { display: block; min-width: 34px; padding: 8px 8px 7px; text-align: center; font: 600 .75rem/1 var(--sans); letter-spacing: .06em; font-variant-numeric: tabular-nums; color: var(--text-3); text-decoration: none; border-bottom: 1px solid transparent; transition: color .2s, border-color .2s; }
+.jindex a:hover { color: var(--text); }
+.jindex a[aria-current="true"] { color: var(--text); border-bottom-color: var(--text); }
+@media (min-width: 1100px) { .jindex { display: block; } }
+
+/* ---- page background (velaris.js): one fixed canvas behind the whole page, under every element; invisible until WebGL has drawn a frame.
+   The body goes transparent so the canvas (z-index -1) shows above the html background, which stays as the fallback. ---- */
+body { background: transparent; }
+.velaris { position: fixed; top: 0; left: 0; z-index: -1; display: block; width: 100%; height: 100lvh; pointer-events: none; opacity: 0; transition: opacity 1.2s ease-out; }
+.velaris.on { opacity: 1; }
+
+/* ---- hero ---- */
+.case-hero { position: relative; max-width: 1240px; margin: 0 auto; min-height: calc(100svh - var(--bar) - 11rem); padding: 9vh var(--pad) 120px; display: flex; flex-direction: column; justify-content: center; /* the title sits in the upper-middle and the start of the road shows below the first screen's content */ }
+.case-hero .kicker { margin-bottom: 22px; }
+.case-hero h1 { margin: 0 0 clamp(20px, 3vw, 36px); font-family: var(--display); font-weight: 700; line-height: 1; }
+.h1-a { display: block; font-size: clamp(3rem, 8vw, 7.5rem); letter-spacing: -.03em; }
+.h1-b { display: block; margin-top: .35em; max-width: 24ch; font-size: clamp(1.3rem, 2.8vw, 2.4rem); font-weight: 600; letter-spacing: -.015em; line-height: 1.2; color: var(--text-2); }
+.case-hero .lead { max-width: 52ch; margin: 0 0 22px; }
+.case-hero .lead em { font-style: normal; }
+.case-hero .meta { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; font: 600 .8125rem var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.case-hero .hero-links { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 34px; }
+.case-hero .hero-links a { padding: 4px 0; font: 600 .9375rem var(--sans); color: var(--text-2); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: color .15s, border-color .15s; }
+.case-hero .hero-links a:hover { color: var(--text); border-bottom-color: var(--text); }
+.cue { position: absolute; left: 50%; bottom: 0; width: 2px; height: 96px; margin-left: -1px; background: var(--path-on); }
+
+/* ---- the journey ---- */
+.journey { --road-w: 260px; --gap: 6rem; --overlap: 12rem; position: relative; max-width: 1240px; margin: 0 auto; padding: 5rem var(--pad) 8rem; }
+.road { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
+html:not(.js) .road { display: none; }
+.road-base { fill: none; stroke: var(--path); stroke-width: 2; }
+.road-lit { fill: none; stroke: var(--path-on); stroke-width: 2; }
+.road-glow { fill: none; stroke: var(--path-on); stroke-width: 9; opacity: .1; }
+.road-ring { fill: var(--bg); stroke: var(--path); stroke-width: 2; transition: fill .3s var(--ease), stroke .3s var(--ease); }
+.road-ring.on { fill: var(--path-on); stroke: var(--path-on); }
+.road-dot { fill: var(--path-on); }
+
+.stop { position: relative; z-index: 1; width: calc(50% - var(--road-w) / 2); }
+.stop[data-side="left"] { margin-right: auto; }
+.stop[data-side="right"] { margin-left: auto; }
+.stop + .stop { margin-top: calc(var(--gap) - var(--overlap)); }
+.stop-body { max-width: 34rem; color: var(--text-1); }
+.stop[data-side="left"] .stop-body { margin-left: auto; }
+.stop-n { display: block; margin: 0 0 .16em; font: 700 clamp(4rem, 9vw, 8rem)/.85 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--text); }
+.stop h2 { margin: 0 0 clamp(18px, 2vw, 28px); font: 700 clamp(1.9rem, 3.4vw, 3rem)/1.1 var(--display); letter-spacing: -.015em; color: var(--text); }
+@media (min-width: 1180px) { .stop h2 { letter-spacing: -.03em; } }
+.narr p { max-width: 68ch; margin: 0 0 1.1em; font-size: clamp(1rem, 1.15vw, 1.125rem); line-height: 1.65; }
+.stop strong { color: var(--text); }
+.stop code { color: inherit; border: 0; }
+.stop a { color: inherit; }
+
+/* evidence: a ruled fact list, not cards */
+.evid { margin-top: 28px; }
+.facts { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--line); }
+.facts li { padding: 13px 0; border-top: 1px solid var(--line); font-size: .9375rem; line-height: 1.6; }
+
+/* stop 03: the deployed services as a ledger grouped by the diagram's lanes (archview.js "ledger" mode; names come from arch.js) */
+.case-arch { margin: 26px 0 10px; }
+.arch-lanes { border-top: 1px solid var(--line); }
+.arch-lanes .lane { padding: 12px 0 11px; border-bottom: 1px solid var(--line); }
+.arch-lanes h3 { margin: 0 0 8px; font: 700 .75rem/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); }
+.arch-lanes h3 small { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-3); }
+.arch-lanes ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 18px; }
+.arch-lanes li { min-width: 0; font-size: .875rem; line-height: 1.35; color: var(--text); }
+.arch-lanes li small { display: block; font: 500 .75rem/1.3 var(--mono); letter-spacing: .04em; color: var(--text-3); }
+.arch-link { margin: 14px 0 6px; }
+@media (max-width: 340px) { .arch-lanes ul { grid-template-columns: minmax(0, 1fr); } }
+
+/* technical details */
+.deep { margin-top: 30px; border-top: 1px solid var(--line); }
+.deep summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 0; cursor: pointer; list-style: none; font: 700 .75rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); transition: color .2s; }
+.deep summary::-webkit-details-marker { display: none; }
+.deep summary::after { content: "+"; font: 400 1.25rem/1 var(--sans); letter-spacing: 0; }
+.deep[open] summary::after { content: "\2212"; }
+.deep summary:hover { color: var(--text); }
+.deep-body { padding-bottom: 6px; font-size: .9375rem; line-height: 1.65; }
+.deep-body p { margin: 0 0 1em; max-width: 68ch; }
+.deep-body .tablewrap { margin-bottom: 1em; overflow-x: auto; }
+.deep-body table { width: 100%; min-width: 280px; border-collapse: collapse; font-size: .875rem; line-height: 1.55; }
+.deep-body th, .deep-body td { padding: 11px 14px 11px 0; vertical-align: top; text-align: left; border-bottom: 1px solid var(--line); background: transparent; }
+.deep-body thead th { padding-top: 6px; padding-bottom: 9px; font: 700 .75rem/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); white-space: normal; border-bottom-color: var(--line-strong); }
+.deep-body tbody th { width: 34%; font-weight: 700; letter-spacing: 0; text-transform: none; font-size: .875rem; color: var(--text); white-space: normal; }
+.deep-body td { color: inherit; }
+.deep-body tr:last-child th, .deep-body tr:last-child td { border-bottom: 1px solid var(--line); }
+
+/* active / inactive: dimming exists only with JavaScript and only when motion is welcome (contrast stays above 4.5:1 in both states) */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .stop :is(.stop-body, .stop-n, h2, strong, .deep summary, .deep-body tbody th) { transition: color .3s var(--ease); }
+  html.js .stop:not(.is-active) .stop-n { color: var(--line-strong); }
+  html.js .stop:not(.is-active) h2, html.js .stop:not(.is-active) strong, html.js .stop:not(.is-active) .deep-body tbody th { color: var(--text-2); }
+  html.js .stop:not(.is-active) .stop-body { color: var(--text-3); }
+  html.js .stop:not(.is-active) .deep summary { color: var(--text-3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .road-lit, .road-glow, .road-dot { display: none; }
+  .road-ring { fill: var(--path-on); stroke: var(--path-on); transition: none; }
+  .jindex a, .deep summary { transition: none; }
+}
+
+/* ---- handoff: the road ends just above it, the console starts directly below it ---- */
+.case-end { max-width: 1240px; margin: 0 auto; padding: 1.75rem var(--pad) 4rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+.case-end h2 { margin: 0; font: 700 clamp(1.9rem, 3.4vw, 3rem)/1.1 var(--display); letter-spacing: -.015em; color: var(--text); }
+.case-end p { max-width: 52ch; margin: 0; font-size: clamp(1rem, 1.15vw, 1.125rem); line-height: 1.65; color: var(--text-1); }
+
+/* ---- tablet ---- */
+@media (max-width: 1099px) {
+  .journey { --road-w: 150px; --gap: 5rem; --overlap: 8rem; }
+}
+
+/* ---- mobile: a straight line 20px from the left edge, content to its right ---- */
+@media (max-width: 699px) {
+  .journey { --gap: 4.5rem; --overlap: 0rem; padding: 3rem var(--pad) 6rem 0; }
+  .stop, .stop[data-side="left"], .stop[data-side="right"] { width: auto; margin-left: 48px; margin-right: 0; }
+  .stop-body, .stop[data-side="left"] .stop-body { margin-left: 0; }
+  .cue { left: 19px; margin-left: 0; }
+  .case-end { align-items: flex-start; text-align: left; padding-left: 48px; }
+}

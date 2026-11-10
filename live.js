@@ -46,12 +46,12 @@
     return loc.origin + path;
   }
   const redirectUri = () => pageDirUrl(g.location);
-  function buildAuthorizeUrl(cfg, p) {
+  function buildAuthorizeUrl(cfg, p, path) {
     const q = new URLSearchParams({
       response_type: "code", client_id: cfg.clientId, redirect_uri: redirectUri(), scope: "openid email",
       code_challenge_method: "S256", code_challenge: p.challenge, state: p.state, nonce: p.nonce,
     });
-    return `https://${cfg.cognitoDomain}/oauth2/authorize?${q}`;
+    return `https://${cfg.cognitoDomain}/${path || "oauth2/authorize"}?${q}`; // path "signup" opens the hosted sign-up page with the same PKCE request
   }
   function buildLogoutUrl(cfg) {
     return `https://${cfg.cognitoDomain}/logout?` + new URLSearchParams({ client_id: cfg.clientId, logout_uri: redirectUri() });
@@ -88,11 +88,14 @@
   const form = (obj) => ({ method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(obj).toString() });
   const tokenUrl = (cfg) => `https://${cfg.cognitoDomain}/oauth2/token`;
 
-  async function beginSignIn(cfg) {
+  async function begin(cfg, path) {
     const verifier = randomString(32), state = randomString(16), nonce = randomString(16);
     g.sessionStorage.setItem(KEY_PKCE, JSON.stringify({ verifier, state, nonce }));
-    g.location.assign(buildAuthorizeUrl(cfg, { state, nonce, challenge: await pkceChallenge(verifier) }));
+    g.location.assign(buildAuthorizeUrl(cfg, { state, nonce, challenge: await pkceChallenge(verifier) }, path));
   }
+  const beginSignIn = (cfg) => begin(cfg, "oauth2/authorize");
+  // Same saved verifier, state and nonce, so handleCallback completes it after the visitor confirms the e-mailed code.
+  const beginSignUp = (cfg) => begin(cfg, "signup");
 
   // Returns {handled:false} when the URL is not a sign-in callback, else {handled:true, ok, error?}.
   async function handleCallback(cfg, loc) {
@@ -293,7 +296,7 @@
 
   return {
     LABELS, randomString, pkceChallenge, constantTimeEqual, pageDirUrl, CONFIG_KEYS, unknownConfigKeys, buildAuthorizeUrl, buildLogoutUrl, decodeJwtPayload, validateIdToken,
-    getSession, setSession, clearSession, beginSignIn, handleCallback, refresh, signOut,
+    getSession, setSession, clearSession, beginSignIn, beginSignUp, handleCallback, refresh, signOut,
     apiFetch, uploadFiles, createJob, listJobs, getJob, loadConfig, buildCsp, applyCsp,
     isStale, isTerminal, needsPolling, mergeJobs, pipelineFor, checkFiles, dimensionOk, errorMessage, safeUrl,
     MAX_FILES, MAX_BYTES, STALE_MS, STUCK_MS,

@@ -17,14 +17,11 @@
   const ROW_LABELS = ["Request path", "Processing and data", "Failure path", "Operational controls (govern the services; not a data flow)"];
   const LANE_TOP = 124, LANE_BOTTOM = 157; // y offsets below a row's band top; the next band's label sits at +168
 
-  // ---- colours ---------------------------------------------------------------------------------------
-  // AWS Architecture Icon category colours. Terraform is not an AWS service: HashiCorp purple.
-  const CAT_COLOR = { compute: "#ED7100", storage: "#7AA116", database: "#C925D1", integration: "#E7157B", security: "#DD344C", management: "#E7157B", client: "#64748B" };
-  const TERRAFORM_COLOR = "#7B42BC";
-  const TYPE_COLOR = { primary: "#4f7cff", teal: "#2dd4bf", muted: "#8193ad", amber: "#f59e0b", danger: "#f87171" };
+  // ---- line styles -----------------------------------------------------------------------------------
+  // Colours live in styles.css (the design tokens): an edge type gets a class "t-<type>", a lit state "lit-<tone>". Only the dash pattern is set here.
   const TYPE_DASH = { solid: "", dashed: "6 5", dotted: "1.5 4.5" };
-  const LIT_COLOR = { active: "#4f7cff", good: "#22c55e", bad: "#f87171" };
   const LIT_TONES = ["active", "good", "bad", "trail"];
+  const LIT_MARKERS = ["active", "good", "bad"];
 
   // ---- icons: original simplified glyphs on a 24px grid, drawn white on the category-colour tile ------
   // The official AWS Architecture Icons (whose licence permits use in architecture diagrams) can be dropped in here by replacing these SVG strings.
@@ -42,14 +39,13 @@
     "AWS Budgets": '<path d="M4 7h16v11H4zM4 10.5h16M15.5 14.5h2"/><path d="M8 4.5h8"/>',
     "AWS X-Ray": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5M7 10.6h2l1.2-2.4 1.8 4.6 1-2.2h1.2"/>',
     "AWS IAM": '<path d="M12 3l7.5 3v5.5c0 4.4-3 7.7-7.5 9.5-4.5-1.8-7.5-5.1-7.5-9.5V6zM8.8 12l2.2 2.2 4.2-4.4"/>',
-    "Terraform": '<path fill="#fff" stroke="none" d="M4 3.5l5.5 3.2v6.4L4 9.9zM10.5 6.7 16 9.9v6.4l-5.5-3.2zM17 3.9l3.5 2v6.4l-3.5-2z"/>',
+    "Terraform": '<path fill="currentColor" stroke="none" d="M4 3.5l5.5 3.2v6.4L4 9.9zM10.5 6.7 16 9.9v6.4l-5.5-3.2zM17 3.9l3.5 2v6.4l-3.5-2z"/>',
   };
   const GENERIC_ICON = '<rect x="5" y="5" width="14" height="14" rx="2"/>';
 
   // ---- helpers -----------------------------------------------------------------------------------------
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const S = new WeakMap(); // container -> state
-  const tileColor = (n) => (n.service === "Terraform" ? TERRAFORM_COLOR : CAT_COLOR[n.category] || CAT_COLOR.client);
   const nameOf = (n, v) => ARCH.text(n.name, v);
   const wrap = (text, max) => {
     const lines = [];
@@ -157,7 +153,7 @@
 
   // ---- drawing -------------------------------------------------------------------------------------------
   function nodeSvg(o, v, interactive) {
-    const n = o.n, name = nameOf(n, v), color = tileColor(n);
+    const n = o.n, name = nameOf(n, v);
     const lines = wrap(name, 21);
     if (lines.length > 2) lines.splice(1, lines.length, lines.slice(1).join(" "));
     const avail = CW - 56 - 6;
@@ -170,14 +166,14 @@
       : ' tabindex="-1"';
     return `<g class="node ${n.kind}" data-node="${n.id}"${attrs}><title>${esc(name + ", " + n.service)}</title>` +
       `<rect class="card" x="${o.x}" y="${o.y}" width="${CW}" height="${CH}" rx="9"/>` +
-      `<rect class="tile" x="${o.x + 12}" y="${o.y + 16}" width="36" height="36" rx="7" fill="${color}"/>` +
-      `<g class="glyph" transform="translate(${o.x + 18},${o.y + 22})" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[n.service] || GENERIC_ICON}</g>` +
+      `<rect class="tile" x="${o.x + 12}" y="${o.y + 16}" width="36" height="36" rx="7"/>` +
+      `<g class="glyph" transform="translate(${o.x + 18},${o.y + 22})" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[n.service] || GENERIC_ICON}</g>` +
       `<text class="svc" x="${o.x + 56}" y="${o.y + 23}"${svcSq}>${esc(svcText)}</text><text class="nm">${nameTxt}</text></g>`;
   }
 
   function legendHtml(v, edgeTypes, hasLegacy) {
-    const items = Object.entries(edgeTypes).map(([k, t]) => `<li><svg class="lg" width="42" height="10" viewBox="0 0 42 10" aria-hidden="true"><line x1="2" y1="5" x2="40" y2="5" stroke="${TYPE_COLOR[t.color]}" stroke-width="2" stroke-linecap="round"${TYPE_DASH[t.style] ? ` stroke-dasharray="${TYPE_DASH[t.style]}"` : ""}/></svg><span>${esc(t.label)}</span></li>`);
-    if (hasLegacy) items.push('<li><svg class="lg" width="42" height="10" viewBox="0 0 42 10" aria-hidden="true"><line x1="2" y1="5" x2="40" y2="5" stroke="#8193ad" stroke-width="2" stroke-linecap="round" opacity=".45"/></svg><span>Muted line: legacy API-key route kept for operator testing</span></li>');
+    const items = Object.entries(edgeTypes).map(([k, t]) => `<li><svg class="lg t-${k}" width="42" height="10" viewBox="0 0 42 10" aria-hidden="true"><line x1="2" y1="5" x2="40" y2="5" stroke-width="2" stroke-linecap="round"${TYPE_DASH[t.style] ? ` stroke-dasharray="${TYPE_DASH[t.style]}"` : ""}/></svg><span>${esc(t.label)}</span></li>`);
+    if (hasLegacy) items.push('<li><svg class="lg t-status" width="42" height="10" viewBox="0 0 42 10" aria-hidden="true"><line x1="2" y1="5" x2="40" y2="5" stroke-width="2" stroke-linecap="round" opacity=".45"/></svg><span>Muted line: legacy API-key route kept for operator testing</span></li>');
     items.push('<li class="lg-note"><span>Bottom strip: operational controls that govern the services above; not a data flow.</span></li>');
     return `<ul class="av-legend" aria-label="Legend">${items.join("")}</ul>`;
   }
@@ -185,25 +181,33 @@
   /* render(container, { mode: "full"|"compact", interactive, idPrefix }): always the current deployment. */
   function render(container, opts) {
     const v = CURRENT;
-    const mode = opts.mode === "compact" ? "compact" : "full";
+    const mode = opts.mode === "compact" || opts.mode === "ledger" ? opts.mode : "full";
     const interactive = mode === "full" && !!opts.interactive;
     const p = opts.idPrefix || "x";
     const L = layout(v);
     const bands = ROW_LABELS.map((label, r) => `<rect class="band${r === 3 ? " strip" : ""}" x="4" y="${bandTop(r)}" width="${W - 8}" height="${BAND_H}" rx="12"/><text class="bandlabel" x="18" y="${bandTop(r) + 19}">${esc(label)}</text>`).join("");
-    const markers = Object.entries(ARCH.edgeTypes).map(([k, t]) => [`${p}-arr-${k}`, TYPE_COLOR[t.color]]).concat(Object.entries(LIT_COLOR).map(([k, c]) => [`${p}-arr-lit-${k}`, c]))
-      .map(([id, c]) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0.5 L10,5 L0,9.5 z" fill="${c}"/></marker>`).join("");
+    const markers = Object.keys(ARCH.edgeTypes).map((k) => [`${p}-arr-${k}`, "t-" + k]).concat(LIT_MARKERS.map((k) => [`${p}-arr-lit-${k}`, "mk-lit-" + k]))
+      .map(([id, cls]) => `<marker id="${id}" class="${cls}" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0.5 L10,5 L0,9.5 z"/></marker>`).join("");
     const edges = L.edges.map((q) => {
-      const t = ARCH.edgeTypes[q.e.type], legacy = ARCH.isLegacy(q.e, v);
-      return `<g class="edge t-${q.e.type}${legacy ? " legacy" : ""}" data-edge="${q.e.id}" data-type="${q.e.type}"><path d="${roundedPath(q.pts, 8)}" fill="none" stroke="${TYPE_COLOR[t.color]}" stroke-width="1.6"${TYPE_DASH[t.style] ? ` stroke-dasharray="${TYPE_DASH[t.style]}"` : ""} stroke-linecap="round" marker-end="url(#${p}-arr-${q.e.type})"/></g>`;
+      const legacy = ARCH.isLegacy(q.e, v), dash = TYPE_DASH[ARCH.edgeTypes[q.e.type].style];
+      return `<g class="edge t-${q.e.type}${legacy ? " legacy" : ""}" data-edge="${q.e.id}" data-type="${q.e.type}"><path d="${roundedPath(q.pts, 8)}" fill="none" stroke-width="1.6"${dash ? ` stroke-dasharray="${dash}"` : ""} stroke-linecap="round" marker-end="url(#${p}-arr-${q.e.type})"/></g>`;
     }).join("");
     const nodes = L.nodes.map((o) => nodeSvg(o, v, interactive)).join("");
     const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-label="CloudFlow architecture"><defs>${markers}</defs>${bands}<g class="av-edges">${edges}</g><g class="av-nodes">${nodes}</g><g class="av-labels"></g></svg>`;
+    // "ledger": the same nodes as a readable list grouped by the diagram's own lanes (no drawing), for column-width spaces.
+    const lanes = mode === "ledger"
+      ? `<div class="arch-lanes">${ROW_LABELS.map((label, r) => {
+        const [name, note] = label.replace(/\)$/, "").split(" (");
+        const items = L.nodes.filter((o) => o.r === r).sort((a, b) => a.c - b.c).map((o) => `<li data-node="${o.id}"><small>${esc(o.n.service)}</small>${esc(nameOf(o.n, v))}</li>`).join("");
+        return `<section class="lane"><h3>${esc(name)}${note ? ` <small>${esc(note)}</small>` : ""}</h3><ul>${items}</ul></section>`;
+      }).join("")}</div>`
+      : "";
     const list = mode === "compact"
       ? `<ol class="arch-list">${L.nodes.map((o) => `<li data-node="${o.id}"><button type="button" tabindex="-1"><small>${esc(o.n.service)}</small>${esc(nameOf(o.n, v))}</button></li>`).join("")}</ol>`
       : "";
     const legend = mode === "full" ? legendHtml(v, ARCH.edgeTypes, L.edges.some((q) => ARCH.isLegacy(q.e, v))) : "";
     container.className = (container.className.replace(/\barchview\b|\bav-(full|compact|current)\b|\bzoomed\b|\bfitted\b/g, "").trim() + ` archview av-${mode} av-current`).trim();
-    container.innerHTML = `<div class="av-stage">${svg}</div>${list}${legend}`;
+    container.innerHTML = mode === "ledger" ? lanes : `<div class="av-stage">${svg}</div>${list}${legend}`;
     const st = { opts, version: v, mode, interactive, L, selected: null, hover: null, z: 1, cx: W / 2, cy: H / 2, drag: null, moved: false };
     S.set(container, st);
     if (interactive) bind(container, st);

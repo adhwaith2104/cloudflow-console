@@ -110,13 +110,13 @@
         ]
       },
       "role": {
-        "v2": "Identity for the console. The owner creates the only users; the hosted sign-in page runs the authorization code flow with PKCE and returns an ID token that API Gateway's authorizer validates on every application route. The token's `sub` becomes the owner prefix for the user's uploads, jobs and results."
+        "v2": "Identity for the console. Visitors can create a 24-hour trial account (capped, and refused while the service is paused); the owner's own account is created by hand. The hosted sign-in page runs the authorization code flow with PKCE and returns an ID token that API Gateway's authorizer validates on every application route. The token's `sub` becomes the owner prefix for the user's uploads, jobs and results."
       },
       "config": {
         "v2": [
           "Tier LITE (free tier), MFA off, deletion protection inactive",
           "Username is the e-mail address, case-insensitive (set at creation; cannot change later)",
-          "Sign-up: admin-create-user only, verified e-mail recovery",
+          "Sign-up: self sign-up on, gated by a Pre sign-up Lambda (user cap, paused service); e-mail verification code; an hourly cleanup deletes every user older than 24 hours except members of the owner group",
           "App client: no secret, OAuth code flow, scopes openid and email, provider COGNITO",
           "Callback and logout URL: exactly the console's own address (origin plus path), nothing else",
           "Explicit auth flows: refresh only (no SRP or password flow with just the client id)",
@@ -127,7 +127,7 @@
       "security": {
         "v2": [
           "prevent_user_existence_errors ENABLED: sign-in does not reveal whether a user exists",
-          "No public registration",
+          "Self sign-up is limited to 24-hour trial accounts: a user cap, the shared kill switch, daily per-account quotas, and an hourly cleanup that deletes every account older than 24 hours except the owner group, and refuses to delete anything while that group is empty",
           "Authorizer identity source: the Authorization header; the ID token is used so no custom scopes are needed"
         ]
       },
@@ -519,7 +519,7 @@
       ],
       "service": "Amazon CloudWatch",
       "name": {
-        "v2": "Alarms (7)"
+        "v2": "Alarms (9)"
       },
       "grid": {
         "v2": [
@@ -528,7 +528,7 @@
         ]
       },
       "role": {
-        "v2": "Seven alarms: dead-letter queue depth, worker errors, api function errors, guard function errors, and the API request count over three windows (5 minutes for a flood, an hour and a day for a slow trickle). All notify the alerts topic; the three request-count alarms also trip the cost guard, which pauses the service."
+        "v2": "Eight alarms: dead-letter queue depth, worker errors, api function errors, guard function errors, sign-up gate errors, trial cleanup errors, and the API request count over three windows (5 minutes for a flood, an hour and a day for a slow trickle). All notify the alerts topic; the three request-count alarms also trip the cost guard, which pauses the service."
       },
       "config": {
         "v2": [
@@ -536,6 +536,8 @@
           "processor-errors: AWS/Lambda Errors, Sum ≥ 1 over one 60 s period",
           "api-errors: AWS/Lambda Errors on the api function, Sum ≥ 1 over one 60 s period",
           "guard-errors: AWS/Lambda Errors on the guard function, Sum ≥ 1 over one 60 s period",
+          "signup-gate-errors: AWS/Lambda Errors on the sign-up gate, Sum ≥ 20 over 3,600 s (every refused sign-up is an error, so only sustained abuse or breakage alerts)",
+          "trial-cleanup-errors: AWS/Lambda Errors on the hourly trial cleanup function, Sum ≥ 1 over one 60 s period",
           "api-requests: AWS/ApiGateway Count, Sum ≥ 600 over one 300 s period (2 requests/s sustained); actions: alerts topic and the budget-guard topic",
           "api-requests-hour: Count Sum ≥ 3,000 over 3,600 s; api-requests-day: Count Sum ≥ 15,000 over 86,400 s; same two actions",
           "An alarm acts only when it changes from OK to ALARM, so the operator switch refuses to re-enable while one is still in ALARM"
@@ -596,7 +598,7 @@
       ],
       "service": "AWS IAM",
       "name": {
-        "v2": "5 roles, least privilege"
+        "v2": "7 roles, least privilege"
       },
       "grid": {
         "v2": [
@@ -613,7 +615,8 @@
           "Worker role: queue receive/delete, table Get/Put/Update, GetObject uploads/*, PutObject results/*, logs on its own group, X-Ray",
           "api function role: PutObject uploads/*, GetObject uploads/* and results/*, table Put/Get/Update, Query owner-index, sqs:SendMessage, logs, X-Ray",
           "Status function role: table GetItem, GetObject results/*, logs, X-Ray",
-          "Guard role: dynamodb:PutItem on the single control item only (dynamodb:LeadingKeys), apigateway:PATCH on this one API stage, plus its own log group"
+          "Guard role: dynamodb:PutItem on the single control item only (dynamodb:LeadingKeys), apigateway:PATCH on this one API stage, plus its own log group",
+          "Trial roles: the sign-up gate reads the single control item and DescribeUserPool; the cleanup function ListUsers, ListUsersInGroup and AdminDeleteUser, all on the one user pool"
         ]
       },
       "security": {
@@ -672,7 +675,7 @@
       ],
       "service": "Amazon CloudWatch Logs",
       "name": {
-        "v2": "4 log groups, 14 days"
+        "v2": "6 log groups, 14 days"
       },
       "grid": {
         "v2": [
@@ -681,7 +684,7 @@
         ]
       },
       "role": {
-        "v2": "Explicit log groups with 14-day retention for the four functions, created before the functions so nothing is logged forever. Log lines carry ids, decisions and error codes, never payloads, tokens or raw exception text."
+        "v2": "Explicit log groups with 14-day retention for the six functions, created before the functions so nothing is logged forever. Log lines carry ids, decisions and error codes, never payloads, tokens or raw exception text."
       },
       "config": {
         "v2": [
@@ -708,7 +711,7 @@
       ],
       "service": "Terraform",
       "name": {
-        "v2": "One configuration, 104 resource blocks"
+        "v2": "One configuration, 119 resource blocks"
       },
       "grid": {
         "v2": [
@@ -717,7 +720,7 @@
         ]
       },
       "role": {
-        "v2": "Everything here comes from one `terraform apply` of 104 resource blocks (120 resources) and can leave with one `terraform destroy`. Random suffixes keep bucket, queue and sign-in domain names unique; every resource carries the Project tag. The configuration validates without the gitignored Pillow layer zip and refuses to plan without it."
+        "v2": "Everything here comes from one `terraform apply` of 119 resource blocks (the first 104 blocks deployed as 120 resources) and can leave with one `terraform destroy`. Random suffixes keep bucket, queue and sign-in domain names unique; every resource carries the Project tag. The configuration validates without the gitignored Pillow layer zip and refuses to plan without it."
       },
       "config": {
         "v2": [
@@ -919,7 +922,7 @@
         "v2"
       ],
       "label": {
-        "v2": "SendMessage {jobId, submittedAt, data: {task: resize, payload: {owner, inputs, options}}}"
+        "v2": "SendMessage {jobId, submittedAt, data: {task: resize, payload: {owner, inputs (S3 keys), options}}}; no image bytes"
       }
     },
     {
