@@ -20,5 +20,5 @@ What this page shows:
 What stays private: the source repository (Python, Terraform, tests, runbooks) is private and available on
 request.
 
-Architecture adapted from a CloudProjects.dev recipe ("Asynchronous API Patterns with SQS" by mzazon);
+Architecture adapted from a CloudProjects.dev recipe ("Asynchronous API Patterns with SQS" by amazon);
 every departure is documented in the private project plan. Built with Terraform and Python 3.12.
